@@ -20,12 +20,14 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm install --no-audit --no-fund
+      - name: 青龙任务文件守卫（仓库里只能有 signmate.js 一个 .js）
+        run: node scripts/to-mjs.mjs
       - name: 语法检查
-        run: node scripts/syntax-check.js
+        run: node scripts/syntax-check.mjs
       - name: 单元测试
-        run: node --test test/*.test.js
+        run: node --test test/*.test.mjs
       - name: 自检脚本可运行
-        run: node signmate_check.js
+        run: node signmate_check.mjs
         env:
           SIGNMATE_CONFIG_DIR: ${{ runner.temp }}/signmate-config
           SIGNMATE_DATA_DIR: ${{ runner.temp }}/signmate-data

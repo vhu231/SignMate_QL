@@ -29,9 +29,9 @@ SignMate_QL 仅作为开源的自托管自动化工具，供学习、研究及�
 | 分支 | `main` |
 | 定时类型 | crontab |
 | 定时规则 | `0 2 * * *`（每天凌晨更新一次仓库） |
-| 白名单 | `signmate.js` |
+| 白名单 | `signmate.js`（留空也安全，见下） |
 | 黑名单 | 留空 |
-| 依赖文件 | `lib\|scripts` |
+| 依赖文件 | 留空 |
 
 保存后点「运行」拉取仓库。青龙会：
 
@@ -39,9 +39,26 @@ SignMate_QL 仅作为开源的自托管自动化工具，供学习、研究及�
 2. 读取 `signmate.js` 顶部的 `cron: 25 8 * * *`，自动创建一条名为 **SignMate 签到** 的定时任务
 3. 检测到 `package.json` 后自动安装依赖（`crypto-js` / `iconv-lite` / `undici` / `yaml`）
 
-> **白名单为什么只写 `signmate.js`？**
-> 仓库里还有自检脚本 `signmate_check.js`，它不需要定时跑。仓库文件会被完整克隆下来，
-> 想手动执行时在「任务管理」里新建一条命令为 `task repo/<订阅目录>/signmate_check.js` 的任务即可。
+> **只会建出一条任务。** 青龙订阅是用 `find -name "*.js"` 递归扫整个仓库的，扫到的每个
+> `.js` 都会被建成一条定时任务（没有 `cron:` 注释就套默认 cron，任务名靠 `grep "name:"` 瞎猜）。
+> 所以本仓库**只有 `signmate.js` 一个 `.js` 文件**，库代码和工具脚本全部用 `.mjs`，
+> `*.js` 这个通配符匹配不到它们。即使你把白名单留空，也不会冒出一堆
+> `lib/drivers/xxx.js` 的垃圾任务。
+>
+> 自检脚本是 `signmate_check.mjs`，不会被自动建任务；想跑的时候在「任务管理」里新建一条
+> 命令为 `task repo/<订阅目录>/signmate_check.mjs` 的任务即可。
+>
+> 如果你改过订阅的「文件后缀」并把 `mjs` 加了进去，那就必须同时把白名单设成 `signmate.js`。
+
+### 已经建出一堆垃圾任务怎么清理
+
+早期版本（库文件还是 `.js`）或者把 `mjs` 加进文件后缀，会看到几十条名字奇怪的任务，
+比如名为 `{ signTime, username`、命令是 `task <订阅目录>/lib/drivers/tieba.js` 的那种。清理方法：
+
+1. 订阅管理里点一次「运行」，拉到最新仓库（库文件已改名，旧的 `.js` 不复存在）
+2. 任务管理 → 搜索你的订阅目录名（如 `vhu231_SignMate_QL_main`）
+3. 勾选所有命令里带 `/lib/`、`/scripts/`、`/test/` 的任务，批量删除
+4. 只保留命令为 `task <订阅目录>/signmate.js` 的那一条
 
 ### 依赖没装上怎么办
 
@@ -72,10 +89,12 @@ SIGNMATE_PASSWORD_<站点后缀>   密码（少数站点）
 | M-Team | `SIGNMATE_APIKEY_MTEAM` | 后台「存取令牌」 |
 | HDSky | `SIGNMATE_COOKIE_HDSKY` | `c_secure_uid=...; c_secure_pass=...` |
 
+完整的变量清单（含各站点示例）见 [`docs/env-example.txt`](docs/env-example.txt)。
+
 配完后先跑一次自检确认变量被读到（自检只输出长度和指纹，不会打印凭据本身）：
 
 ```bash
-task repo/<你的订阅目录>/signmate_check.js
+task repo/<你的订阅目录>/signmate_check.mjs
 ```
 
 ### 内置站点与对应的环境变量
@@ -187,7 +206,7 @@ task repo/<订阅目录>/signmate.js --kind=signin   # 只跑签到类站点
 task repo/<订阅目录>/signmate.js --kind=visit    # 只跑保活类站点
 task repo/<订阅目录>/signmate.js nodeseek v2ex   # 只跑指定站点
 task repo/<订阅目录>/signmate.js --force         # 忽略「今天已成功」记录，强制重跑
-task repo/<订阅目录>/signmate_check.js           # 配置自检，不发任何签到请求
+task repo/<订阅目录>/signmate_check.mjs          # 配置自检，不发任何签到请求
 ```
 
 想给 PT 保活单独排一个时间，就新建一条 `--kind=visit` 的任务、配自己的 cron 即可。
@@ -216,7 +235,7 @@ task repo/<订阅目录>/signmate_check.js           # 配置自检，不发任�
 在原来跑 SignMate 的机器上执行：
 
 ```bash
-node scripts/from-signmate-config.js /opt/docker/signmate/config
+node scripts/from-signmate-config.mjs /opt/docker/signmate/config
 ```
 
 会按你现有的 `sites.yaml` / `secrets.yaml` 打印出对应的青龙环境变量（`export NAME='value'` 形式）。
@@ -232,7 +251,10 @@ node scripts/from-signmate-config.js /opt/docker/signmate/config
 ## 九、常见问题
 
 **任务跑完提示「没有可执行的站点」**
-说明一个 `SIGNMATE_COOKIE_*` 变量都没读到。跑一次 `signmate_check.js`，对照输出里给的准确变量名重新添加。
+说明一个 `SIGNMATE_COOKIE_*` 变量都没读到。跑一次 `signmate_check.mjs`，对照输出里给的准确变量名重新添加。
+
+**订阅建出了一堆名字奇怪的任务**
+见上面「已经建出一堆垃圾任务怎么清理」。
 
 **某个站点一直「登录态异常」**
 Cookie 过期了。重新从浏览器复制完整 Cookie 串（不要只复制单个字段），更新对应环境变量。

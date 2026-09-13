@@ -13,10 +13,10 @@
  *   task repo/<订阅目录>/signmate.js nodeseek v2ex   # 只跑指定站点
  */
 
-import logger from "./lib/utils/logger.js";
-import { loadConfig, preloadRuntime } from "./lib/config.js";
-import { runSites, buildCategorizedNotifyMessages, sleep } from "./lib/runner.js";
-import { notify, onlyFailures } from "./lib/notify.js";
+import logger from "./lib/utils/logger.mjs";
+import { loadConfig, preloadRuntime } from "./lib/config.mjs";
+import { runSites, buildCategorizedNotifyMessages, sleep } from "./lib/runner.mjs";
+import { notify, onlyFailures } from "./lib/notify.mjs";
 
 function parseArgs(argv = []) {
   const only = [];
@@ -73,7 +73,7 @@ async function main() {
   logger.info(`[配置] 已启用 ${sites.length} 个站点${only.length ? `，本次筛选出 ${selected.length} 个` : ""}${proxy.enabled ? `；代理: ${proxy.urls.length} 个` : "；未配置代理"}`);
 
   if (!selected.length) {
-    logger.warn("[配置] 没有可执行的站点。请先在青龙「环境变量」里添加 SIGNMATE_COOKIE_<站点> 等凭据，再运行 signmate_check.js 自检。");
+    logger.warn("[配置] 没有可执行的站点。请先在青龙「环境变量」里添加 SIGNMATE_COOKIE_<站点> 等凭据，再运行 signmate_check.mjs 自检。");
     return 0;
   }
 

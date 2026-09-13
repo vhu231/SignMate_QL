@@ -9,7 +9,7 @@ const sandbox = mkdtempSync(join(tmpdir(), "signmate-ql-"));
 process.env.SIGNMATE_CONFIG_DIR = join(sandbox, "config");
 process.env.SIGNMATE_DATA_DIR = join(sandbox, "data");
 
-const { buildEnvSuffixes, loadConfig } = await import("../lib/config.mjs");
+const { buildEnvSuffixes, loadConfig, missingCookieNames } = await import("../lib/config.mjs");
 const { inferResultStatus, requiresBrowser, siteKind, siteCategory } = await import("../lib/runner.mjs");
 const BUILTIN_SITES = (await import("../lib/builtin-sites.mjs")).default;
 
@@ -155,4 +155,14 @@ test("内置目录里需要浏览器的站点清单是已知的 8 个", () => {
     "carpt-net", "hddolby-com", "hdfans-org", "hdhome-org",
     "hhanclub-net", "nodeseek", "pt-0ff-cc", "pterclub-net",
   ]);
+});
+
+test("cookie_required_names 校验支持精确名与通配名", () => {
+  assert.deepEqual(missingCookieNames({ cookie_required_names: ["c_secure_pass"] }, "c_secure_uid=1"), ["c_secure_pass"]);
+  assert.deepEqual(missingCookieNames({ cookie_required_names: ["c_secure_pass"] }, "c_secure_uid=1; c_secure_pass=x"), []);
+  // Discuz 的 Cookie 前缀随站点变，内置目录里用 *_saltkey 这种通配声明。
+  assert.deepEqual(missingCookieNames({ cookie_required_names: ["*_saltkey", "*_auth"] }, "Ubs4_2132_saltkey=a; Ubs4_2132_auth=b"), []);
+  assert.deepEqual(missingCookieNames({ cookie_required_names: ["*_saltkey", "*_auth"] }, "Ubs4_2132_saltkey=a"), ["*_auth"]);
+  // 没有声明要求时不做校验。
+  assert.deepEqual(missingCookieNames({}, "whatever=1"), []);
 });

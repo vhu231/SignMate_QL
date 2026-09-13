@@ -10,7 +10,7 @@
 import { existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import BUILTIN_SITES from "./lib/builtin-sites.mjs";
-import { buildEnvSuffixes, hasCredential, isPlaywrightAvailable, loadConfig, preloadRuntime } from "./lib/config.mjs";
+import { browserStatus, buildEnvSuffixes, hasCredential, isPlaywrightAvailable, loadConfig, missingCookieNames, preloadRuntime } from "./lib/config.mjs";
 import { configDir, dataDir, qlDataRoot } from "./lib/paths.mjs";
 import { requiresBrowser, siteKind } from "./lib/runner.mjs";
 
@@ -56,8 +56,8 @@ async function main() {
   line(`  sharp          : ${await optionalDep("sharp")}  — OpenCD 等验证码 OCR 需要`);
   line(`  tesseract.js   : ${await optionalDep("tesseract.js")}  — OpenCD 等验证码 OCR 需要`);
   line(`  yaml           : ${await optionalDep("yaml")}  — 使用 sites.yaml / secrets.yaml 时需要`);
-  const chromium = process.env.CHROMIUM_PATH || process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || "";
-  line(`  Chromium 路径  : ${chromium ? (existsSync(chromium) ? `✅ ${chromium}` : `❌ ${chromium}（文件不存在）`) : "未设置 CHROMIUM_PATH（将尝试自动探测）"}`);
+  const browser = browserStatus();
+  line(`  浏览器可用     : ${browser.ok ? `✅ ${browser.executablePath}` : `❌ ${browser.reason}`}`);
 
   line("");
   line("【代理】");
@@ -88,6 +88,7 @@ async function main() {
   const rows = [...new Set([...Object.keys(BUILTIN_SITES), ...diagnostics.allKeys])].sort();
   let enabledCount = 0;
   const blockedByBrowser = [];
+  const badCookies = [];
 
   for (const key of rows) {
     const site = sites.find(s => s.key === key) || BUILTIN_SITES[key] || {};
@@ -103,6 +104,11 @@ async function main() {
     if (secret.api_key) line(`      API Key    : ${fingerprint(secret.api_key)}`);
     if (secret.token) line(`      Token      : ${fingerprint(secret.token)}`);
     if (secret.totp_secret) line(`      2FA Secret : ${fingerprint(secret.totp_secret)}`);
+    const missing = missingCookieNames(site, secret.cookie || "");
+    if (missing.length) {
+      line(`      ⚠️ Cookie 缺少必需字段：${missing.join("、")}，请从浏览器重新复制完整 Cookie 串`);
+      badCookies.push((site.note || key) + "（缺 " + missing.join("、") + "）");
+    }
     const needsBrowser = requiresBrowser({ ...site, key });
     if (on) line(`      运行模式   : ${site.signin_mode || "api-first"}；代理 ${site.proxy_mode || "auto"}；${needsBrowser ? "需要浏览器" : "纯 HTTP 可用"}`);
     if (on && needsBrowser && !isPlaywrightAvailable()) {
@@ -114,6 +120,9 @@ async function main() {
   line("");
   line("=".repeat(60));
   line(`  已启用 ${enabledCount} 个站点；未配置凭据而跳过 ${diagnostics.skipped.length} 个`);
+  if (badCookies.length) {
+    line(`  ⚠️ ${badCookies.length} 个站点的 Cookie 不完整：${badCookies.join("；")}`);
+  }
   if (blockedByBrowser.length) {
     line(`  ⚠️ 其中 ${blockedByBrowser.length} 个必须有浏览器：${blockedByBrowser.join("、")}`);
     line("     NexusPHP 系 PT 站点的 HTTP 路径只能读出「今日已签到」状态，真正的签到提交要浏览器；");

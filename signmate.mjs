@@ -14,7 +14,7 @@
  */
 
 import logger from "./lib/utils/logger.mjs";
-import { browserStatus, isPlaywrightAvailable, loadConfig, preloadRuntime } from "./lib/config.mjs";
+import { browserStatus, isPlaywrightAvailable, loadConfig, missingCookieNames, preloadRuntime } from "./lib/config.mjs";
 import { runSites, buildCategorizedNotifyMessages, requiresBrowser, sleep } from "./lib/runner.mjs";
 import { notify, onlyFailures } from "./lib/notify.mjs";
 
@@ -92,9 +92,22 @@ async function main() {
     }
   }
 
+  // Cookie 缺关键字段时，站点多半会报「登录态异常」，提前指出来比看报错好排查。
+  for (const site of selected) {
+    const missing = missingCookieNames(site, (secrets[site.key] || {}).cookie || "");
+    if (missing.length) {
+      logger.warn(`[凭据] ${site.note || site.key} 的 Cookie 缺少必需字段：${missing.join("、")}；请从浏览器重新复制完整 Cookie 串`);
+    }
+  }
+
   await randomStartDelay();
 
-  const { results, skippedToday } = await runSites(selected, secrets, { kind, skipTodaySuccess });
+  // 已知浏览器不可用时，这些站点重试多少次都是同一个错，直接一次失败，别白等重试间隔。
+  const runnable = selected.map(site => (
+    !isPlaywrightAvailable() && requiresBrowser(site) ? { ...site, retry: 0 } : site
+  ));
+
+  const { results, skippedToday } = await runSites(runnable, secrets, { kind, skipTodaySuccess });
 
   if (!results.length) {
     if (skippedToday.length) logger.info("[完成] 所有候选站点今天都已经成功过，本次无需执行");

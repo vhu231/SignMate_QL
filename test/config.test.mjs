@@ -166,3 +166,52 @@ test("cookie_required_names 校验支持精确名与通配名", () => {
   // 没有声明要求时不做校验。
   assert.deepEqual(missingCookieNames({}, "whatever=1"), []);
 });
+
+test("有 HTTP 实现的站点默认走 HTTP，即使内置目录写的是 playwright", () => {
+  // 内置目录里 v2ex 是 signin_mode: playwright（给常驻 Docker 部署用的），
+  // 青龙这边应该默认走更快的 HTTP 路径。
+  assert.equal(BUILTIN_SITES.v2ex.signin_mode, "playwright");
+  const { sites } = withEnv(clearSignmateEnv({ SIGNMATE_COOKIE_V2EX: "A2=x" }), () => loadConfig());
+  assert.equal(sites[0].signin_mode, "api");
+});
+
+test("SIGNMATE_MODE 能还原上游的浏览器行为", () => {
+  const { sites } = withEnv(
+    clearSignmateEnv({ SIGNMATE_COOKIE_V2EX: "A2=x", SIGNMATE_MODE: "playwright" }),
+    () => loadConfig()
+  );
+  assert.equal(sites[0].signin_mode, "playwright");
+});
+
+test("单站点 SIGNMATE_MODE_<KEY> 优先于全局默认", () => {
+  const { sites } = withEnv(
+    clearSignmateEnv({ SIGNMATE_COOKIE_V2EX: "A2=x", SIGNMATE_MODE_V2EX: "playwright" }),
+    () => loadConfig()
+  );
+  assert.equal(sites[0].signin_mode, "playwright");
+});
+
+test("只有 Playwright 实现的站点不会被标成默认 HTTP", () => {
+  const { sites, diagnostics } = withEnv(clearSignmateEnv({ SIGNMATE_COOKIE_NODESEEK: "session=x" }), () => loadConfig());
+  assert.ok(!diagnostics.httpFirst.includes("nodeseek"));
+  // 本机没装浏览器时会走「没浏览器也试一下 HTTP」的降级分支。
+  assert.ok(sites[0].signin_mode === "api" || sites[0].signin_mode === "playwright");
+});
+
+test("V2EX 领取链接会被绝对化后再交给 page.goto", async () => {
+  // 上游 bug：Playwright 路径直接把相对路径喂给 page.goto，会报
+  // "Protocol error (Page.navigate): Cannot navigate to invalid URL"。
+  const { absoluteV2EXRedeemUrl } = await import("../lib/drivers/v2ex-utils.mjs");
+  assert.equal(
+    absoluteV2EXRedeemUrl("/mission/daily/redeem?once=33377", "https://www.v2ex.com"),
+    "https://www.v2ex.com/mission/daily/redeem?once=33377"
+  );
+  assert.equal(
+    absoluteV2EXRedeemUrl("https://www.v2ex.com/mission/daily/redeem?once=1", "https://www.v2ex.com"),
+    "https://www.v2ex.com/mission/daily/redeem?once=1"
+  );
+  assert.equal(
+    absoluteV2EXRedeemUrl("/mission/daily/redeem?once=3&amp;x=1", "https://www.v2ex.com"),
+    "https://www.v2ex.com/mission/daily/redeem?once=3&x=1"
+  );
+});

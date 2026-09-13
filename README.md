@@ -146,8 +146,8 @@ task <别名>/signmate_check.mjs
 
 「签到」会触发站点的每日签到动作，「保活」只是带登录态访问一次以维持账号活跃。
 
-**「无浏览器可用？」这一列很重要**：标 ❌ 的 8 个站点在青龙里必须额外装 `playwright-core` + Chromium，
-否则每天都会失败。原因见下一节。
+**「无浏览器可用？」这一列很重要**：标 ✅ 的 20 个站点**默认就走 HTTP**，不开浏览器，更快也更省内存；
+标 ❌ 的 8 个站点在青龙里必须额外装 `playwright-core` + Chromium，否则每天都会失败。原因见下一节。
 
 ---
 
@@ -197,9 +197,14 @@ task <别名>/signmate_check.mjs
 
 ## 五、浏览器模式（Playwright）
 
-上游有一部分站点默认用 Playwright 驱动真实浏览器。青龙镜像里默认**没有** Chromium，
-所以本项目做了自动降级：检测不到 `playwright-core` 时，这些站点会自动改用 HTTP 模式。
-但**降级不是万能的**，要分两种情况看：
+内置站点目录里有一批站点写的是 `signin_mode: playwright`，那是给上游「常驻 Docker + 自带 Chromium」
+的部署方式准备的。青龙这边容器更瘦、任务是一次性进程，所以本项目改了默认：
+
+> **只要该 driver 有完整的 HTTP 实现，就默认走 HTTP，不开浏览器**（HTTP 失败时 driver 会自动回退
+> Playwright）。想还原上游行为：全局设 `SIGNMATE_MODE=playwright`，或单站点
+> `SIGNMATE_MODE_<站点后缀>=playwright`。
+
+哪些站点有完整 HTTP 实现，分两种情况看：
 
 **✅ 降级后照常工作（20 个站点）**
 

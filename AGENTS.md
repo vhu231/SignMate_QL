@@ -14,7 +14,8 @@
 | `lib/utils/*.mjs` | 上游 `src/utils/*.js` | HTTP / 代理 / Discuz 等工具，同上 |
 | `lib/builtin-sites.mjs` | 上游 `src/builtin-sites.js` | 内置站点目录，直接同步 |
 | `lib/captcha-ocr.mjs` | 上游同名文件 | 已改为按需加载 sharp / tesseract.js |
-| `lib/config.mjs` | 本仓库新增 | 环境变量 → 站点/凭据配置 |
+| `lib/config.mjs` | 本仓库新增 | 环境变量 → 站点/凭据配置，含默认运行模式决策 |
+| `lib/capabilities.mjs` | 本仓库新增 | 站点能力：能否纯 HTTP、是否默认走 HTTP |
 | `lib/runner.mjs` | 本仓库重写 | 去掉批量状态文件与 yaml 回写 |
 | `lib/notify.mjs` | 本仓库重写 | 优先复用青龙 `sendNotify.js` |
 | `lib/store.mjs` | 本仓库重写 | 只保留「今天是否已成功」判断 |
@@ -44,6 +45,9 @@ README 里白名单已列为必填项。
 1. 直接复制上游的 `src/drivers/*`、`src/utils/*`、`src/builtin-sites.js` 到 `lib/`
 2. 跑 `node scripts/to-mjs.mjs` 完成 `.js → .mjs` 改名与相对导入重写
 3. 复制完必须重新打上这几处青龙适配补丁：
+   - `lib/drivers/v2ex.mjs` 的领取链接必须绝对化后再 `page.goto`
+     （上游直接传相对路径，Playwright 会报 Cannot navigate to invalid URL），
+     配套的 `absoluteV2EXRedeemUrl()` 在 `lib/drivers/v2ex-utils.mjs`
    - 所有 `await import("playwright-core")` → `await importPlaywright()`，并在
      `import { ... } from "../utils/browser.mjs"` 里补上 `importPlaywright`
    - `lib/utils/logger.mjs` 保持本仓库版本（只写 stdout，不建 `logs/` 目录）

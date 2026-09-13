@@ -1,6 +1,6 @@
 {
   "name": "signmate-ql",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "private": true,
   "description": "SignMate 签伴 · 青龙面板版 — 多站点自动签到与保活，配置全部走青龙环境变量",
   "type": "module",
@@ -9,7 +9,7 @@
   },
   "scripts": {
     "lint:tasks": "node scripts/to-mjs.mjs",
-    "start": "node signmate.js",
+    "start": "node signmate.mjs",
     "check": "node signmate_check.mjs",
     "syntax": "node scripts/syntax-check.mjs",
     "test": "node --test test/*.test.mjs",

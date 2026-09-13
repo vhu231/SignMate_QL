@@ -7,14 +7,14 @@
  * 多站点自动签到 / 保活。配置全部通过青龙「环境变量」维护，详见仓库 README。
  *
  * 手动运行示例（青龙「任务管理 → 新建任务」的命令）：
- *   task repo/<订阅目录>/signmate.js                 # 全部已配置站点
- *   task repo/<订阅目录>/signmate.js --kind=signin   # 只跑签到类站点
- *   task repo/<订阅目录>/signmate.js --kind=visit    # 只跑保活类站点
- *   task repo/<订阅目录>/signmate.js nodeseek v2ex   # 只跑指定站点
+ *   task <订阅目录>/signmate.mjs                 # 全部已配置站点
+ *   task <订阅目录>/signmate.mjs --kind=signin   # 只跑签到类站点
+ *   task <订阅目录>/signmate.mjs --kind=visit    # 只跑保活类站点
+ *   task <订阅目录>/signmate.mjs nodeseek v2ex   # 只跑指定站点
  */
 
 import logger from "./lib/utils/logger.mjs";
-import { isPlaywrightAvailable, loadConfig, preloadRuntime } from "./lib/config.mjs";
+import { browserStatus, isPlaywrightAvailable, loadConfig, preloadRuntime } from "./lib/config.mjs";
 import { runSites, buildCategorizedNotifyMessages, requiresBrowser, sleep } from "./lib/runner.mjs";
 import { notify, onlyFailures } from "./lib/notify.mjs";
 
@@ -82,9 +82,13 @@ async function main() {
   if (!isPlaywrightAvailable()) {
     const blocked = selected.filter(requiresBrowser);
     if (blocked.length) {
-      logger.warn(`[依赖] 以下 ${blocked.length} 个站点必须有浏览器才能完成动作，当前未安装 playwright-core，本次会失败：${blocked.map(s => s.note || s.key).join("、")}`);
-      logger.warn("[依赖] 解决办法：青龙「依赖管理 → NodeJs」安装 playwright-core，并设置 CHROMIUM_PATH 指向容器里的 Chromium；");
-      logger.warn("[依赖] 或用 SIGNMATE_SITES_EXCLUDE 把它们排除掉，避免每天收到失败通知。");
+      const status = browserStatus();
+      logger.warn(`[依赖] 浏览器不可用：${status.reason}`);
+      logger.warn(`[依赖] 以下 ${blocked.length} 个站点必须有浏览器才能完成动作，本次会失败：${blocked.map(s => s.note || s.key).join("、")}`);
+      logger.warn(status.playwright
+        ? "[依赖] 解决办法：青龙「依赖管理 → Linux」安装 chromium（Debian 版镜像装 chromium 或 chromium-browser），装好后一般会自动识别；路径特殊时设 CHROMIUM_PATH。"
+        : "[依赖] 解决办法：青龙「依赖管理 → NodeJs」安装 playwright-core，再「依赖管理 → Linux」安装 chromium。");
+      logger.warn("[依赖] 不想装浏览器就用 SIGNMATE_SITES_EXCLUDE 把它们排除掉，避免每天收到失败通知。");
     }
   }
 

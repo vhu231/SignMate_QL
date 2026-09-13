@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm install --no-audit --no-fund
-      - name: 青龙任务文件守卫（仓库里只能有 signmate.js 一个 .js）
+      - name: 源码后缀守卫（全仓库必须是 .mjs）
         run: node scripts/to-mjs.mjs
       - name: 语法检查
         run: node scripts/syntax-check.mjs

@@ -19,21 +19,25 @@
 | `lib/notify.mjs` | 本仓库重写 | 优先复用青龙 `sendNotify.js` |
 | `lib/store.mjs` | 本仓库重写 | 只保留「今天是否已成功」判断 |
 | `lib/paths.mjs` | 本仓库新增 | 解析 `/ql/data` 下的配置与数据目录 |
-| `signmate.js` | 本仓库新增 | 青龙任务入口，顶部带 `cron:` 注释 |
+| `signmate.mjs` | 本仓库新增 | 青龙任务入口，顶部带 `cron:` 注释 |
 | `signmate_check.mjs` | 本仓库新增 | 配置自检，不发签到请求 |
 
-## 为什么库文件是 `.mjs`
+## 青龙的两个硬约束（改结构前必读）
 
-青龙订阅用 `find -name "*.js"` **递归**扫整个仓库，扫到的每个 `.js` 都会被建成一条定时任务：
-没有 `cron:` 注释就套默认 cron，任务名从 `grep "name:" | awk -F ":" '{print $2}'` 里瞎猜
-（`lib/drivers/tieba.js` 就曾因此被建成一条名叫 `{ signTime, username` 的任务）。
+**1. 任务是按文件扫出来的，只有白名单能挡。**
+青龙用 `find` 按 `RepoFileExtensions` 递归扫整个仓库，命中的每个文件都会被建成定时任务
+（没有 `cron:` 就套默认 cron，任务名从 `grep "name:" | awk -F ":" '{print $2}'` 里猜）。
+2.21 的默认后缀是 `js mjs py pyc`，**换后缀躲不掉**——早期版本试过用 `.mjs` 规避，失败了。
+README 里白名单已列为必填项。
 
-`*.js` 这个 glob 匹配不到 `.mjs`，所以仓库里**只保留 `signmate.js` 一个 `.js`**，其余全部 `.mjs`，
-这样即使用户把订阅白名单留空也只会建出一条任务。
+**2. 脚本是被复制出去执行的，不是在克隆目录里跑。**
+青龙把白名单匹配到的脚本 + 「依赖文件」匹配到的文件复制到 `/ql/data/scripts/<别名>/` 再执行。
+所以订阅必须填「依赖文件」= `lib/`，否则 `ERR_MODULE_NOT_FOUND`。
+而且依赖文件同样只对扫描后缀内的文件生效，**`package.json` 永远复制不过去** ——
+这就是全仓库必须用 `.mjs` 的真正原因：模块类型由后缀确定，不能依赖 `package.json` 的 `"type": "module"`。
 
-`node scripts/to-mjs.mjs` 负责改名 + 重写相对导入，并在发现多余 `.js` 时以非零码退出；
-CI 里作为守卫步骤运行。它只重写 `./` `../` 开头的相对导入，不会碰
-`/ql/data/scripts/sendNotify.js` 这类青龙自己的文件路径。
+`node scripts/to-mjs.mjs` 负责改名 + 重写相对导入，并在发现 `.js` 时以非零码退出；CI 里作为守卫步骤运行。
+它只重写 `./` `../` 开头的相对导入，不会碰 `/ql/data/scripts/sendNotify.js` 这类青龙自己的文件路径。
 
 ## 从上游同步驱动时
 
@@ -54,5 +58,5 @@ CI 里作为守卫步骤运行。它只重写 `./` `../` 开头的相对导入�
 - 任何诊断输出只能包含凭据的长度与指纹，不能打印 Cookie / Token 明文
 - 站点能力字段（`kind`、`enforced_kind`）以内置目录为准，不接受用户配置覆盖
 - 不要提交真实配置：`config/sites.yaml`、`config/secrets.yaml`、`data/`、`.env` 都在 `.gitignore` 里
-- `signmate.js` 顶部的 `cron:` 注释是青龙订阅自动建任务的依据，改动前先确认格式仍被识别
-- 新增任何文件一律用 `.mjs`；除非确实想让青龙多建一条定时任务，否则不要往仓库里加 `.js`
+- `signmate.mjs` 顶部的 `cron:` 注释是青龙订阅自动建任务的依据，改动前先确认格式仍被识别
+- 新增任何文件一律用 `.mjs`，不要往仓库里加 `.js`（模块类型会变得不确定）

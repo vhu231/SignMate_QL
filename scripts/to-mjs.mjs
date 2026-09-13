@@ -1,10 +1,15 @@
 // ============================================================
-// to-mjs — 把 lib/ 下的 .js 改名为 .mjs，并重写相对导入
+// to-mjs — 把 lib/ 下的 .js 统一改名为 .mjs，并重写相对导入
 //
-// 为什么需要：青龙订阅用 `find -name "*.js"` 递归扫描整个仓库，
-// 扫到的每个 .js 都会被建成一条定时任务（没有 cron 注释就用默认 cron，
-// 任务名从 `grep "name:"` 里瞎猜）。所以仓库里只保留 signmate.js 一个 .js，
-// 其余全部用 .mjs —— `*.js` 这个 glob 匹配不到 `.mjs` 结尾的文件。
+// 为什么全仓库都用 .mjs：
+//   1. 青龙订阅把「白名单匹配到的脚本」复制到 /ql/data/scripts/<别名>/ 再执行，
+//      package.json 不在扫描后缀内、永远复制不过去，所以入口不能靠
+//      package.json 的 "type": "module" 来确定模块类型 —— .mjs 才是明确的 ESM。
+//   2. 顺带保持整仓一致，避免 .js/.mjs 混用时导入后缀写错。
+//
+// ⚠️ 后缀不能替代白名单：青龙 2.21 的默认 RepoFileExtensions 是
+//    "js mjs py pyc"，.mjs 一样会被扫成定时任务。唯一可靠的控制点是订阅的
+//    「白名单」，README 里已列为必填项。
 //
 // 从上游同步 src/drivers、src/utils 之后跑一次即可（幂等）：
 //   node scripts/to-mjs.mjs
@@ -16,10 +21,8 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const SKIP_DIRS = new Set(["node_modules", ".git", "data", "logs", ".tmp"]);
-// 只有这些文件允许带青龙可识别的后缀 —— 它们就是要被建成任务的入口。
-const KEEP_TASK_FILES = new Set(["signmate.js"]);
-// 青龙订阅默认的「文件后缀」列表，命中任何一个都会被建成定时任务。
-const QL_TASK_EXTENSIONS = ["js", "py", "sh", "ts"];
+// 整个仓库都应该是 .mjs；出现 .js 通常意味着从上游复制后忘了跑这个脚本。
+const ALLOWED_JS = new Set([]);
 
 function walk(dir) {
   const out = [];
@@ -65,17 +68,17 @@ function main() {
   }
 
   const stray = walk(ROOT)
-    .filter(path => QL_TASK_EXTENSIONS.some(ext => path.endsWith("." + ext)))
+    .filter(path => path.endsWith(".js"))
     .map(path => relative(ROOT, path).replace(/\\/g, "/"))
-    .filter(path => !KEEP_TASK_FILES.has(path));
+    .filter(path => !ALLOWED_JS.has(path));
 
   console.log(`改名 ${renamed.length} 个文件，重写 ${rewritten} 个文件的导入`);
   if (stray.length) {
-    console.error(`\n⚠️ 仓库里还有会被青龙建成定时任务的文件（后缀 ${QL_TASK_EXTENSIONS.join(" / ")}）：\n  ${stray.join("\n  ")}`);
-    console.error("如果它们不该成为定时任务，请改成 .mjs / .txt 等青龙不扫描的后缀。");
+    console.error(`\n⚠️ 仓库里还有 .js 文件：\n  ${stray.join("\n  ")}`);
+    console.error("青龙复制脚本时带不走 package.json，.js 的模块类型会变得不确定，请改名为 .mjs。");
     process.exit(1);
   }
-  console.log("✅ 仓库里只有 signmate.js 会被青龙扫到，最多只会建出一条任务");
+  console.log("✅ 全仓库均为 .mjs，模块类型明确");
 }
 
 main();

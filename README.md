@@ -19,7 +19,7 @@ SignMate_QL 仅作为开源的自托管自动化工具，供学习、研究及�
 
 ## 一、安装：青龙订阅
 
-青龙面板 → **订阅管理 → 新建订阅**，按下表填写：
+青龙面板 → **订阅管理 → 新建订阅**，按下表填写。**白名单和依赖文件两栏必须填**，原因见下：
 
 | 字段 | 值 |
 | --- | --- |
@@ -27,38 +27,52 @@ SignMate_QL 仅作为开源的自托管自动化工具，供学习、研究及�
 | 类型 | 公开仓库 |
 | 链接 | `https://github.com/vhu231/SignMate_QL.git` |
 | 分支 | `main` |
-| 定时类型 | crontab |
-| 定时规则 | `0 2 * * *`（每天凌晨更新一次仓库） |
-| 白名单 | `signmate.js`（留空也安全，见下） |
+| 定时类型 | interval（每 1 天）或 crontab `0 2 * * *` |
+| **白名单** | `signmate\.js$`  ← **必填** |
 | 黑名单 | 留空 |
-| 依赖文件 | 留空 |
+| **依赖文件** | `lib/`  ← **必填** |
 
-保存后点「运行」拉取仓库。青龙会：
+保存后点「运行」拉取。青龙会：
 
-1. 把仓库克隆到 `/ql/data/repo/<你的订阅目录>/`
-2. 读取 `signmate.js` 顶部的 `cron: 25 8 * * *`，自动创建一条名为 **SignMate 签到** 的定时任务
-3. 检测到 `package.json` 后自动安装依赖（`crypto-js` / `iconv-lite` / `undici` / `yaml`）
+1. 把仓库克隆到 `/ql/data/repo/<别名>/`
+2. 把**白名单**匹配到的脚本 + **依赖文件**匹配到的文件复制到 `/ql/data/scripts/<别名>/`
+3. 读取 `signmate.mjs` 顶部的 `cron: 25 8 * * *`，建出一条 **SignMate 签到** 任务
+4. 任务实际执行的是 `task <别名>/signmate.mjs`
 
-> **只会建出一条任务。** 青龙订阅是用 `find -name "*.js"` 递归扫整个仓库的，扫到的每个
-> `.js` 都会被建成一条定时任务（没有 `cron:` 注释就套默认 cron，任务名靠 `grep "name:"` 瞎猜）。
-> 所以本仓库**只有 `signmate.js` 一个 `.js` 文件**，库代码和工具脚本全部用 `.mjs`，
-> `*.js` 这个通配符匹配不到它们。即使你把白名单留空，也不会冒出一堆
-> `lib/drivers/xxx.js` 的垃圾任务。
->
-> 自检脚本是 `signmate_check.mjs`，不会被自动建任务；想跑的时候在「任务管理」里新建一条
-> 命令为 `task repo/<订阅目录>/signmate_check.mjs` 的任务即可。
->
-> 如果你改过订阅的「文件后缀」并把 `mjs` 加了进去，那就必须同时把白名单设成 `signmate.js`。
+### 这两栏为什么必填
+
+**白名单**：青龙用 `find` 按 `RepoFileExtensions` 递归扫整个仓库，命中的每个文件都会被建成一条定时任务——
+没有 `cron:` 注释就套默认 cron，任务名从 `grep "name:" | awk -F ":" '{print $2}'` 里猜。
+青龙 2.21 的默认后缀是 **`js mjs py pyc`**，所以 `lib/` 下的 35 个 `.mjs` 会全部变成垃圾任务，
+名字是 `{ signTime, username`、`[USERNAME, USER],` 这种从源码里截出来的碎片。
+换文件后缀躲不掉，**只有白名单能挡**。
+
+**依赖文件**：青龙不是在克隆目录里跑脚本，而是把匹配到的文件**复制**到 `/ql/data/scripts/<别名>/` 再执行。
+只填白名单的话，只有 `signmate.mjs` 被复制过去，`lib/` 不在，一跑就是：
+
+```
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '.../lib/utils/logger.mjs'
+```
+
+填 `lib/` 才会把库文件一起带过去。
+
+> 注意：依赖文件这一栏同样只对扫描后缀内的文件生效，`package.json` 复制不过去——
+> 所以本仓库所有源码都用 `.mjs`（模块类型由后缀确定，不依赖 `package.json` 的 `"type": "module"`）。
+
+### 自检与手动任务
+
+自检脚本不会被自动建任务（白名单只匹配 `signmate\.js$`）。想跑就在「任务管理 → 新建任务」里加一条：
+
+```bash
+task <别名>/signmate_check.mjs
+```
+
+但要注意：`signmate_check.mjs` 也得先被复制过去，把依赖文件那栏改成 `lib/|signmate_check\.mjs` 即可。
 
 ### 已经建出一堆垃圾任务怎么清理
 
-早期版本（库文件还是 `.js`）或者把 `mjs` 加进文件后缀，会看到几十条名字奇怪的任务，
-比如名为 `{ signTime, username`、命令是 `task <订阅目录>/lib/drivers/tieba.js` 的那种。清理方法：
-
-1. 订阅管理里点一次「运行」，拉到最新仓库（库文件已改名，旧的 `.js` 不复存在）
-2. 任务管理 → 搜索你的订阅目录名（如 `vhu231_SignMate_QL_main`）
-3. 勾选所有命令里带 `/lib/`、`/scripts/`、`/test/` 的任务，批量删除
-4. 只保留命令为 `task <订阅目录>/signmate.js` 的那一条
+订阅的 `autoDelCron` 默认开着：**把白名单补上，再点一次订阅的「运行」，青龙会自动删掉所有不再匹配的任务**，
+不需要手动一条条删。清理完确认只剩 `task <别名>/signmate.mjs` 这一条即可。
 
 ### 依赖没装上怎么办
 
@@ -94,7 +108,7 @@ SIGNMATE_PASSWORD_<站点后缀>   密码（少数站点）
 配完后先跑一次自检确认变量被读到（自检只输出长度和指纹，不会打印凭据本身）：
 
 ```bash
-task repo/<你的订阅目录>/signmate_check.mjs
+task <别名>/signmate_check.mjs
 ```
 
 ### 内置站点与对应的环境变量
@@ -207,8 +221,15 @@ NexusPHP 的 HTTP 路径只实现到「读出今日是否已签到」，真正�
 确实需要浏览器模式时：
 
 1. 青龙「依赖管理 → NodeJs」安装 `playwright-core`
-2. 容器里装好 Chromium，并设置环境变量 `CHROMIUM_PATH=/usr/bin/chromium`（按实际路径填）
-3. 需要时设 `SIGNMATE_REQUIRE_PLAYWRIGHT=true`，避免静默降级
+2. 青龙「依赖管理 → Linux」安装 `chromium`（Debian 版镜像可能叫 `chromium` 或 `chromium-browser`）
+3. 装好后一般会自动识别；路径特殊就设 `CHROMIUM_PATH=/usr/bin/chromium`
+4. 需要时设 `SIGNMATE_REQUIRE_PLAYWRIGHT=true`，避免静默降级
+
+> **最常见的坑**：只装了 `playwright-core` 没装浏览器。playwright-core 自己**不下载** Chromium，
+> 于是会报 `Failed to launch chromium because executable doesn't exist at /root/.cache/ms-playwright/...`。
+> 本项目的降级判断看的是「Chromium 能不能启动」而不是「playwright-core 装没装」，
+> 所以这种情况下 HTTP 可用的站点仍会自动降级跑通，只有那 8 个必须用浏览器的站点会失败。
+> 跑一次 `signmate_check.mjs` 会直接告诉你卡在哪一步。
 
 验证码 OCR（OpenCD 一类的字符验证码）还需要额外安装 `sharp` 和 `tesseract.js`，这两个包体积较大，按需安装。
 
@@ -219,12 +240,12 @@ NexusPHP 的 HTTP 路径只实现到「读出今日是否已签到」，真正�
 在青龙「任务管理 → 新建任务」里，命令栏可以这样写：
 
 ```bash
-task repo/<订阅目录>/signmate.js                 # 全部已配置站点
-task repo/<订阅目录>/signmate.js --kind=signin   # 只跑签到类站点
-task repo/<订阅目录>/signmate.js --kind=visit    # 只跑保活类站点
-task repo/<订阅目录>/signmate.js nodeseek v2ex   # 只跑指定站点
-task repo/<订阅目录>/signmate.js --force         # 忽略「今天已成功」记录，强制重跑
-task repo/<订阅目录>/signmate_check.mjs          # 配置自检，不发任何签到请求
+task <别名>/signmate.mjs                 # 全部已配置站点
+task <别名>/signmate.mjs --kind=signin   # 只跑签到类站点
+task <别名>/signmate.mjs --kind=visit    # 只跑保活类站点
+task <别名>/signmate.mjs nodeseek v2ex   # 只跑指定站点
+task <别名>/signmate.mjs --force         # 忽略「今天已成功」记录，强制重跑
+task <别名>/signmate_check.mjs          # 配置自检，不发任何签到请求
 ```
 
 想给 PT 保活单独排一个时间，就新建一条 `--kind=visit` 的任务、配自己的 cron 即可。

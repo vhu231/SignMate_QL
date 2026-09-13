@@ -14,8 +14,8 @@
  */
 
 import logger from "./lib/utils/logger.mjs";
-import { loadConfig, preloadRuntime } from "./lib/config.mjs";
-import { runSites, buildCategorizedNotifyMessages, sleep } from "./lib/runner.mjs";
+import { isPlaywrightAvailable, loadConfig, preloadRuntime } from "./lib/config.mjs";
+import { runSites, buildCategorizedNotifyMessages, requiresBrowser, sleep } from "./lib/runner.mjs";
 import { notify, onlyFailures } from "./lib/notify.mjs";
 
 function parseArgs(argv = []) {
@@ -75,6 +75,17 @@ async function main() {
   if (!selected.length) {
     logger.warn("[配置] 没有可执行的站点。请先在青龙「环境变量」里添加 SIGNMATE_COOKIE_<站点> 等凭据，再运行 signmate_check.mjs 自检。");
     return 0;
+  }
+
+  // NexusPHP 的签到提交、NodeSeek 等站点没有 HTTP 实现，缺浏览器时必然失败，
+  // 先一次性说清楚，而不是让用户在每个站点的报错里各看一遍。
+  if (!isPlaywrightAvailable()) {
+    const blocked = selected.filter(requiresBrowser);
+    if (blocked.length) {
+      logger.warn(`[依赖] 以下 ${blocked.length} 个站点必须有浏览器才能完成动作，当前未安装 playwright-core，本次会失败：${blocked.map(s => s.note || s.key).join("、")}`);
+      logger.warn("[依赖] 解决办法：青龙「依赖管理 → NodeJs」安装 playwright-core，并设置 CHROMIUM_PATH 指向容器里的 Chromium；");
+      logger.warn("[依赖] 或用 SIGNMATE_SITES_EXCLUDE 把它们排除掉，避免每天收到失败通知。");
+    }
   }
 
   await randomStartDelay();

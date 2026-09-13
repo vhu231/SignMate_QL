@@ -10,7 +10,8 @@ process.env.SIGNMATE_CONFIG_DIR = join(sandbox, "config");
 process.env.SIGNMATE_DATA_DIR = join(sandbox, "data");
 
 const { buildEnvSuffixes, loadConfig } = await import("../lib/config.mjs");
-const { inferResultStatus, siteKind, siteCategory } = await import("../lib/runner.mjs");
+const { inferResultStatus, requiresBrowser, siteKind, siteCategory } = await import("../lib/runner.mjs");
+const BUILTIN_SITES = (await import("../lib/builtin-sites.mjs")).default;
 
 function withEnv(vars, fn) {
   const saved = {};
@@ -118,4 +119,40 @@ test("站点类型与分类推断", () => {
   assert.equal(siteCategory({ category: "PT" }), "pt");
   assert.equal(siteCategory({ kind: "visit" }), "pt");
   assert.equal(siteCategory({}), "forum");
+});
+
+test("PterClub 在内置目录里，且由 nexusphp 驱动", () => {
+  const site = BUILTIN_SITES["pterclub-net"];
+  assert.ok(site, "内置目录里必须有 pterclub-net");
+  assert.equal(site.driver, "nexusphp");
+  assert.equal(site.kind, "signin");
+  assert.deepEqual(site.cookie_required_names, ["c_secure_pass"]);
+});
+
+test("配了 PterClub Cookie 就会启用", () => {
+  const { sites } = withEnv(clearSignmateEnv({ SIGNMATE_COOKIE_PTERCLUB: "c_secure_uid=1; c_secure_pass=x" }), () => loadConfig());
+  assert.deepEqual(sites.map(s => s.key), ["pterclub-net"]);
+});
+
+test("NexusPHP 签到站点需要浏览器，保活站点不需要", () => {
+  // HTTP 路径只能读出「今日已签到」，真正的签到提交必须回退 Playwright。
+  assert.equal(requiresBrowser({ driver: "nexusphp", kind: "signin" }), true);
+  assert.equal(requiresBrowser({ driver: "nexusphp", kind: "visit" }), false);
+  // NodeSeek 没有任何 HTTP 实现。
+  assert.equal(requiresBrowser({ driver: "nodeseek" }), true);
+  // Discuz / 纯 API driver 不需要浏览器。
+  for (const driver of ["pojie52", "right", "pceva", "kafan", "naixi", "qianmoju", "v2ex", "nodeloc", "chiphell", "feng", "pcbeta", "tieba", "mteam"]) {
+    assert.equal(requiresBrowser({ driver }), false, driver + " 应该是纯 HTTP 可用");
+  }
+});
+
+test("内置目录里需要浏览器的站点清单是已知的 8 个", () => {
+  const needs = Object.entries(BUILTIN_SITES)
+    .filter(([key, site]) => requiresBrowser({ ...site, key }))
+    .map(([key]) => key)
+    .sort();
+  assert.deepEqual(needs, [
+    "carpt-net", "hddolby-com", "hdfans-org", "hdhome-org",
+    "hhanclub-net", "nodeseek", "pt-0ff-cc", "pterclub-net",
+  ]);
 });

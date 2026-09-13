@@ -99,39 +99,41 @@ task repo/<你的订阅目录>/signmate_check.mjs
 
 ### 内置站点与对应的环境变量
 
-| 站点 | key | 分类 | 类型 | 默认模式 | 主凭据环境变量 | 可用简写后缀 |
+| 站点 | key | 分类 | 类型 | 无浏览器可用？ | 主凭据环境变量 | 可用简写后缀 |
 | --- | --- | --- | --- | --- | --- | --- |
-| Audiences | `audiences-me` | PT | 保活 | playwright | `SIGNMATE_COOKIE_AUDIENCES_ME` | `AUDIENCES` |
-| BTSCHOOL | `pt-btschool-club` | PT | 保活 | playwright | `SIGNMATE_COOKIE_PT_BTSCHOOL_CLUB` | `PT_BTSCHOOL` / `BTSCHOOL` |
-| CarPT | `carpt-net` | PT | 签到 | playwright | `SIGNMATE_COOKIE_CARPT_NET` | `CARPT` |
-| Chiphell | `chiphell-com` | 论坛 | 保活 | playwright | `SIGNMATE_COOKIE_CHIPHELL_COM` | `CHIPHELL` |
-| FARMM | `pt-0ff-cc` | PT | 签到 | playwright | `SIGNMATE_COOKIE_PT_0FF_CC` | `PT_0FF` / `0FF` |
-| HDDolby | `hddolby-com` | PT | 签到 | playwright | `SIGNMATE_COOKIE_HDDOLBY_COM` | `HDDOLBY` |
-| HDFans | `hdfans-org` | PT | 签到 | playwright | `SIGNMATE_COOKIE_HDFANS_ORG` | `HDFANS` |
-| HDHome | `hdhome-org` | PT | 签到 | playwright | `SIGNMATE_COOKIE_HDHOME_ORG` | `HDHOME` |
-| HDSky | `hdsky-me` | PT | 保活 | visit | `SIGNMATE_COOKIE_HDSKY_ME` | `HDSKY` |
-| HHanClub | `hhanclub-net` | PT | 签到 | playwright | `SIGNMATE_COOKIE_HHANCLUB_NET` | `HHANCLUB` |
-| M-Team | `mteam` | PT | 保活 | api | `SIGNMATE_APIKEY_MTEAM` | — |
-| NodeLoc | `nodeloc` | 论坛 | 签到 | playwright | `SIGNMATE_COOKIE_NODELOC` | — |
-| NodeSeek | `nodeseek` | 论坛 | 签到 | playwright | `SIGNMATE_COOKIE_NODESEEK` | — |
-| OpenCD | `open-cd` | PT | 保活 | visit | `SIGNMATE_COOKIE_OPEN_CD` | `OPEN` |
-| OurBits | `ourbits-club` | PT | 保活 | visit | `SIGNMATE_COOKIE_OURBITS_CLUB` | `OURBITS` |
-| PCBeta | `pcbeta` | 论坛 | 签到 | api | `SIGNMATE_COOKIE_PCBETA` | — |
-| PCEVA | `pceva` | 论坛 | 签到 | playwright | `SIGNMATE_COOKIE_PCEVA` | — |
-| PTTime | `pttime-org` | PT | 保活 | playwright | `SIGNMATE_COOKIE_PTTIME_ORG` | `PTTIME` |
-| Piggo | `piggo-me` | PT | 保活 | playwright | `SIGNMATE_COOKIE_PIGGO_ME` | `PIGGO` |
-| PterClub | `pterclub-net` | PT | 签到 | playwright | `SIGNMATE_COOKIE_PTERCLUB_NET` | `PTERCLUB` |
-| V2EX | `v2ex` | 论坛 | 签到 | playwright | `SIGNMATE_COOKIE_V2EX` | — |
-| 卡饭论坛 | `kafan` | 论坛 | 签到 | playwright | `SIGNMATE_COOKIE_KAFAN` | — |
-| 吾爱破解 | `pojie52` | 论坛 | 签到 | playwright | `SIGNMATE_COOKIE_POJIE52` | — |
-| 奶昔论坛 | `naixi` | 论坛 | 签到 | playwright | `SIGNMATE_COOKIE_NAIXI` | — |
-| 威锋论坛 | `feng-com` | 论坛 | 签到 | api | `SIGNMATE_COOKIE_FENG_COM` | `FENG` |
-| 恩山无线论坛 | `right` | 论坛 | 签到 | playwright | `SIGNMATE_COOKIE_RIGHT` | — |
-| 百度贴吧 | `baidu-tieba` | 论坛 | 签到 | api | `SIGNMATE_COOKIE_BAIDU_TIEBA` | — |
-| 阡陌居 | `qianmoju` | 论坛 | 签到 | playwright | `SIGNMATE_COOKIE_QIANMOJU` | — |
+| Audiences | `audiences-me` | PT | 保活 | ✅ 纯 HTTP | `SIGNMATE_COOKIE_AUDIENCES_ME` | `AUDIENCES` |
+| BTSCHOOL | `pt-btschool-club` | PT | 保活 | ✅ 纯 HTTP | `SIGNMATE_COOKIE_PT_BTSCHOOL_CLUB` | `PT_BTSCHOOL` / `BTSCHOOL` |
+| CarPT | `carpt-net` | PT | 签到 | ❌ 需浏览器 | `SIGNMATE_COOKIE_CARPT_NET` | `CARPT` |
+| Chiphell | `chiphell-com` | 论坛 | 保活 | ✅ 纯 HTTP | `SIGNMATE_COOKIE_CHIPHELL_COM` | `CHIPHELL` |
+| FARMM | `pt-0ff-cc` | PT | 签到 | ❌ 需浏览器 | `SIGNMATE_COOKIE_PT_0FF_CC` | `PT_0FF` / `0FF` |
+| HDDolby | `hddolby-com` | PT | 签到 | ❌ 需浏览器 | `SIGNMATE_COOKIE_HDDOLBY_COM` | `HDDOLBY` |
+| HDFans | `hdfans-org` | PT | 签到 | ❌ 需浏览器 | `SIGNMATE_COOKIE_HDFANS_ORG` | `HDFANS` |
+| HDHome | `hdhome-org` | PT | 签到 | ❌ 需浏览器 | `SIGNMATE_COOKIE_HDHOME_ORG` | `HDHOME` |
+| HDSky | `hdsky-me` | PT | 保活 | ✅ 纯 HTTP | `SIGNMATE_COOKIE_HDSKY_ME` | `HDSKY` |
+| HHanClub | `hhanclub-net` | PT | 签到 | ❌ 需浏览器 | `SIGNMATE_COOKIE_HHANCLUB_NET` | `HHANCLUB` |
+| M-Team | `mteam` | PT | 保活 | ✅ 纯 HTTP | `SIGNMATE_APIKEY_MTEAM` | — |
+| NodeLoc 每日签到 | `nodeloc` | 论坛 | 签到 | ✅ 纯 HTTP | `SIGNMATE_COOKIE_NODELOC` | — |
+| NodeSeek 每日签到 | `nodeseek` | 论坛 | 签到 | ❌ 需浏览器 | `SIGNMATE_COOKIE_NODESEEK` | — |
+| OpenCD | `open-cd` | PT | 保活 | ✅ 纯 HTTP | `SIGNMATE_COOKIE_OPEN_CD` | `OPEN` |
+| OurBits | `ourbits-club` | PT | 保活 | ✅ 纯 HTTP | `SIGNMATE_COOKIE_OURBITS_CLUB` | `OURBITS` |
+| PCBeta | `pcbeta` | 论坛 | 签到 | ✅ 纯 HTTP | `SIGNMATE_COOKIE_PCBETA` | — |
+| PCEVA 每日签到 | `pceva` | 论坛 | 签到 | ✅ 纯 HTTP | `SIGNMATE_COOKIE_PCEVA` | — |
+| PTTime | `pttime-org` | PT | 保活 | ✅ 纯 HTTP | `SIGNMATE_COOKIE_PTTIME_ORG` | `PTTIME` |
+| Piggo | `piggo-me` | PT | 保活 | ✅ 纯 HTTP | `SIGNMATE_COOKIE_PIGGO_ME` | `PIGGO` |
+| PterClub | `pterclub-net` | PT | 签到 | ❌ 需浏览器 | `SIGNMATE_COOKIE_PTERCLUB_NET` | `PTERCLUB` |
+| V2EX 每日签到 | `v2ex` | 论坛 | 签到 | ✅ 纯 HTTP | `SIGNMATE_COOKIE_V2EX` | — |
+| 卡饭论坛 | `kafan` | 论坛 | 签到 | ✅ 纯 HTTP | `SIGNMATE_COOKIE_KAFAN` | — |
+| 吾爱破解每日签到 | `pojie52` | 论坛 | 签到 | ✅ 纯 HTTP | `SIGNMATE_COOKIE_POJIE52` | — |
+| 奶昔论坛每日签到 | `naixi` | 论坛 | 签到 | ✅ 纯 HTTP | `SIGNMATE_COOKIE_NAIXI` | — |
+| 威锋论坛 | `feng-com` | 论坛 | 签到 | ✅ 纯 HTTP | `SIGNMATE_COOKIE_FENG_COM` | `FENG` |
+| 恩山无线论坛每日签到 | `right` | 论坛 | 签到 | ✅ 纯 HTTP | `SIGNMATE_COOKIE_RIGHT` | — |
+| 百度贴吧 | `baidu-tieba` | 论坛 | 签到 | ✅ 纯 HTTP | `SIGNMATE_COOKIE_BAIDU_TIEBA` | — |
+| 阡陌居每日签到 | `qianmoju` | 论坛 | 签到 | ✅ 纯 HTTP | `SIGNMATE_COOKIE_QIANMOJU` | — |
 
 「签到」会触发站点的每日签到动作，「保活」只是带登录态访问一次以维持账号活跃。
-「默认模式」里标 `playwright` 的站点在没装浏览器时会自动降级为 HTTP 模式，见下文。
+
+**「无浏览器可用？」这一列很重要**：标 ❌ 的 8 个站点在青龙里必须额外装 `playwright-core` + Chromium，
+否则每天都会失败。原因见下一节。
 
 ---
 
@@ -182,9 +184,25 @@ task repo/<你的订阅目录>/signmate_check.mjs
 ## 五、浏览器模式（Playwright）
 
 上游有一部分站点默认用 Playwright 驱动真实浏览器。青龙镜像里默认**没有** Chromium，
-所以本项目做了自动降级：**检测不到 `playwright-core` 时，这些站点会自动改用 HTTP 模式**，
-任务日志里会给出一行提示。大多数论坛站点（Discuz 系、V2EX、NodeLoc、Chiphell 等）和
-NexusPHP 系 PT 站点都有完整的 HTTP 实现，降级后依然可用。
+所以本项目做了自动降级：检测不到 `playwright-core` 时，这些站点会自动改用 HTTP 模式。
+但**降级不是万能的**，要分两种情况看：
+
+**✅ 降级后照常工作（20 个站点）**
+
+- 纯 API driver：威锋、PCBeta、百度贴吧、M-Team
+- Discuz 系论坛：吾爱破解、恩山、PCEVA、卡饭、奶昔、阡陌居 —— HTTP 会真的 POST 提交签到
+- V2EX / NodeLoc —— HTTP 会真的领取每日奖励
+- Chiphell 以及 **所有 `kind=保活` 的 NexusPHP PT 站点**（Audiences、BTSCHOOL、HDSky、
+  OpenCD、OurBits、Piggo、PTTime）—— 保活只要带登录态打开页面，HTTP 就够了
+
+**❌ 降级后无法签到（8 个站点，必须装浏览器）**
+
+`nodeseek`、以及 `kind=签到` 的 NexusPHP PT 站点：
+**PterClub**、CarPT、FARMM、HHanClub、HDDolby、HDFans、HDHome。
+
+NexusPHP 的 HTTP 路径只实现到「读出今日是否已签到」，真正的签到提交是
+`signin_submit_api_not_implemented`，必须回退 Playwright；NodeSeek 则根本没有 HTTP 实现。
+这些站点在没装浏览器时会明确报错，`signmate_check.mjs` 也会提前把它们列出来。
 
 确实需要浏览器模式时：
 

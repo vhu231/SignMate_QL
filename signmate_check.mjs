@@ -10,9 +10,9 @@
 import { existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import BUILTIN_SITES from "./lib/builtin-sites.mjs";
-import { buildEnvSuffixes, hasCredential, loadConfig, preloadRuntime } from "./lib/config.mjs";
+import { buildEnvSuffixes, hasCredential, isPlaywrightAvailable, loadConfig, preloadRuntime } from "./lib/config.mjs";
 import { configDir, dataDir, qlDataRoot } from "./lib/paths.mjs";
-import { siteKind } from "./lib/runner.mjs";
+import { requiresBrowser, siteKind } from "./lib/runner.mjs";
 
 function line(text = "") {
   console.log(text);
@@ -87,6 +87,7 @@ async function main() {
   const enabledKeys = new Set(sites.map(s => s.key));
   const rows = [...new Set([...Object.keys(BUILTIN_SITES), ...diagnostics.allKeys])].sort();
   let enabledCount = 0;
+  const blockedByBrowser = [];
 
   for (const key of rows) {
     const site = sites.find(s => s.key === key) || BUILTIN_SITES[key] || {};
@@ -102,12 +103,22 @@ async function main() {
     if (secret.api_key) line(`      API Key    : ${fingerprint(secret.api_key)}`);
     if (secret.token) line(`      Token      : ${fingerprint(secret.token)}`);
     if (secret.totp_secret) line(`      2FA Secret : ${fingerprint(secret.totp_secret)}`);
-    if (on) line(`      运行模式   : ${site.signin_mode || "api-first"}；代理 ${site.proxy_mode || "auto"}`);
+    const needsBrowser = requiresBrowser({ ...site, key });
+    if (on) line(`      运行模式   : ${site.signin_mode || "api-first"}；代理 ${site.proxy_mode || "auto"}；${needsBrowser ? "需要浏览器" : "纯 HTTP 可用"}`);
+    if (on && needsBrowser && !isPlaywrightAvailable()) {
+      line("      ⚠️ 该站点必须有浏览器才能完成动作，当前未安装 playwright-core，运行会失败");
+      blockedByBrowser.push(site.note || key);
+    }
   }
 
   line("");
   line("=".repeat(60));
   line(`  已启用 ${enabledCount} 个站点；未配置凭据而跳过 ${diagnostics.skipped.length} 个`);
+  if (blockedByBrowser.length) {
+    line(`  ⚠️ 其中 ${blockedByBrowser.length} 个必须有浏览器：${blockedByBrowser.join("、")}`);
+    line("     NexusPHP 系 PT 站点的 HTTP 路径只能读出「今日已签到」状态，真正的签到提交要浏览器；");
+    line("     请安装 playwright-core + Chromium（设 CHROMIUM_PATH），或用 SIGNMATE_SITES_EXCLUDE 排除它们。");
+  }
   line("  提示：只要设置了对应站点的 SIGNMATE_COOKIE_*，站点就会自动启用；");
   line("        也可以用 SIGNMATE_SITES 显式指定要跑哪些站点。");
   line("=".repeat(60));

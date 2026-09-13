@@ -1,6 +1,6 @@
 {
   "name": "signmate-ql",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "SignMate 签伴 · 青龙面板版 — 多站点自动签到与保活，配置全部走青龙环境变量",
   "type": "module",

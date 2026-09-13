@@ -45,6 +45,9 @@ README 里白名单已列为必填项。
 1. 直接复制上游的 `src/drivers/*`、`src/utils/*`、`src/builtin-sites.js` 到 `lib/`
 2. 跑 `node scripts/to-mjs.mjs` 完成 `.js → .mjs` 改名与相对导入重写
 3. 复制完必须重新打上这几处青龙适配补丁：
+   - `lib/utils/discuz-http.mjs` 的 `openText()` 必须先过 `unwrapDiscuzAjax()`
+     （Discuz 的 inajax 响应是 XML+CDATA+script，上游直接 htmlToText 只会得到 "]]>"），
+     且 `runNaixi()` 提交后要复查签到页状态
    - `lib/drivers/v2ex.mjs` 的领取链接必须绝对化后再 `page.goto`
      （上游直接传相对路径，Playwright 会报 Cannot navigate to invalid URL），
      配套的 `absoluteV2EXRedeemUrl()` 在 `lib/drivers/v2ex-utils.mjs`

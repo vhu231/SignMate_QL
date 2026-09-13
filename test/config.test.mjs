@@ -215,3 +215,31 @@ test("V2EX 领取链接会被绝对化后再交给 page.goto", async () => {
     "https://www.v2ex.com/mission/daily/redeem?once=3&x=1"
   );
 });
+
+test("Discuz 的 inajax CDATA 响应能还原出提示文案", async () => {
+  const { unwrapDiscuzAjax } = await import("../lib/utils/discuz-http.mjs");
+  const { htmlToText } = await import("../lib/utils/http-session.mjs");
+
+  // 真实响应：正文只有一段 showWindow 的 JS 调用。htmlToText 会把 <script> 整段删掉，
+  // CDATA 包装再被当成标签吃掉，最后只剩裸露的 "]]>"，于是签到成功被判成失败。
+  const ajax = [
+    String.raw`<?xml version="1.0" encoding="utf-8"?>`,
+    String.raw`<root><![CDATA[<script type="text/javascript" reload="1">`
+      + String.raw`showWindow('qiandao', '<div class="alert_right"><p>恭喜你签到成功！获得随机奖励 经验 9 点.</p></div>', 'info', 0);`
+      + String.raw`</script>]]></root>`,
+  ].join("\n");
+
+  const text = htmlToText(unwrapDiscuzAjax(ajax));
+  assert.match(text, /恭喜你签到成功/);
+  assert.match(text, /经验 9 点/);
+  assert.doesNotMatch(text, /\]\]>/);
+
+  // 普通 HTML 不受影响。
+  const plain = "<html><body><p>您今天已经签到</p></body></html>";
+  assert.equal(unwrapDiscuzAjax(plain), plain);
+
+  // 只有 URL / 参数这类字符串时不往正文里塞噪音。
+  const noisy = String.raw`<root><![CDATA[<script>showWindow('x','k_misign-sign.html?op=1')</script>]]></root>`;
+  const unwrapped = unwrapDiscuzAjax(noisy);
+  assert.equal(unwrapped.match(/k_misign-sign\.html/g)?.length, 1);
+});

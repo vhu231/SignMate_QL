@@ -1,0 +1,14 @@
+node_modules/
+data/
+logs/
+config/sites.yaml
+config/secrets.yaml
+config/*.json
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+package-lock.json
+pnpm-lock.yaml
+.tmp/

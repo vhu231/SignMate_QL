@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 青龙镜像常见的 Node 版本都要能跑
+        node-version: ["18", "20", "22"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm install --no-audit --no-fund
+      - name: 语法检查
+        run: node scripts/syntax-check.js
+      - name: 单元测试
+        run: node --test test/*.test.js
+      - name: 自检脚本可运行
+        run: node signmate_check.js
+        env:
+          SIGNMATE_CONFIG_DIR: ${{ runner.temp }}/signmate-config
+          SIGNMATE_DATA_DIR: ${{ runner.temp }}/signmate-data

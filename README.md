@@ -181,10 +181,28 @@ task <别名>/signmate_check.mjs
 
 ## 四、通知
 
-**默认不需要任何配置。** 脚本会自动加载青龙自带的 `/ql/data/scripts/sendNotify.js`，
-你在青龙「系统设置 → 通知设置」里配好的渠道（Telegram / Bark / 企业微信 / 钉钉 / PushPlus / Gotify / 飞书……）都会直接生效。
+脚本会自动加载青龙自带的 `/ql/data/scripts/sendNotify.js`，这样 Telegram / Bark / 企业微信 /
+钉钉 / PushPlus / Gotify / 飞书等渠道都能复用。
 
-只有在找不到青龙通知模块时，才会回落到内置通道：
+> ⚠️ **面板「系统设置 → 通知设置」不管用。** 那份配置只供青龙**自身的系统通知**使用，
+> 不会注入给 `sendNotify.js`。脚本要推送，必须在青龙「**环境变量**」里单独配置对应变量：
+>
+> | 渠道 | 环境变量 |
+> | --- | --- |
+> | 飞书 | `FSKEY`（机器人 webhook 末尾那段 UUID，不是整条 URL） |
+> | Telegram | `TG_BOT_TOKEN` + `TG_USER_ID` |
+> | Bark | `BARK_PUSH` |
+> | 企业微信 | `QYWX_KEY` 或 `QYWX_AM` |
+> | 钉钉 | `DD_BOT_TOKEN` + `DD_BOT_SECRET` |
+> | Server酱 | `PUSH_KEY` |
+> | PushPlus | `PUSH_PLUS_TOKEN` |
+> | 自定义 Webhook | `WEBHOOK_URL` |
+>
+> 青龙会把这些变量名**全部**注入任务环境（值为空），所以 `sendNotify.js` 在一个渠道都没配时
+> 会静默地什么都不做、并正常返回。本项目因此会检查这些变量**有没有值**，没有就明确告警，
+> 不会谎报「已发送」。跑一次 `signmate_check.mjs` 能直接看到已配好哪些渠道。
+
+找不到青龙通知模块、或一个渠道都没配时，会回落到内置通道：
 
 | 变量 | 说明 |
 | --- | --- |

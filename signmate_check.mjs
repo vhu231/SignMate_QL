@@ -13,6 +13,7 @@ import BUILTIN_SITES from "./lib/builtin-sites.mjs";
 import { browserStatus, buildEnvSuffixes, hasCredential, isPlaywrightAvailable, loadConfig, missingCookieNames, preloadRuntime } from "./lib/config.mjs";
 import { configDir, dataDir, qlDataRoot } from "./lib/paths.mjs";
 import { requiresBrowser, siteKind } from "./lib/runner.mjs";
+import { qlConfiguredChannels } from "./lib/notify.mjs";
 
 function line(text = "") {
   console.log(text);
@@ -78,7 +79,13 @@ async function main() {
   line("");
   line("【通知】");
   const qlNotify = ["/ql/data/scripts/sendNotify.js", "/ql/data/scripts/notify.js"].find(p => existsSync(p));
-  line(`  青龙通知模块   : ${qlNotify ? `✅ ${qlNotify}（面板「通知设置」里的渠道都可用）` : "❌ 未找到，将回落到内置 Telegram / Bark"}`);
+  const qlChannels = qlConfiguredChannels();
+  line(`  青龙通知模块   : ${qlNotify ? `✅ ${qlNotify}` : "❌ 未找到，将回落到内置 Telegram / Bark"}`);
+  line(`  青龙已配渠道   : ${qlChannels.length ? `✅ ${qlChannels.join("、")}` : "❌ 没有任何渠道变量有值 —— 调用会静默无效果"}`);
+  if (qlNotify && !qlChannels.length) {
+    line("     注意：面板「系统设置 → 通知设置」只作用于青龙自身的系统通知，不会注入给 sendNotify.js。");
+    line("     脚本要推送，需在「环境变量」里单独配：飞书=FSKEY，Telegram=TG_BOT_TOKEN+TG_USER_ID，Bark=BARK_PUSH …");
+  }
   line(`  Telegram       : ${(process.env.SIGNMATE_TG_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || process.env.TG_BOT_TOKEN) ? "✅ 已配置 Bot Token" : "未配置"}`);
   line(`  Bark           : ${(process.env.SIGNMATE_BARK_URL || process.env.BARK_PUSH) ? "✅ 已配置" : "未配置"}`);
 
